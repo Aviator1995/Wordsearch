@@ -1,0 +1,198 @@
+clear; clc; tic;
+% Load data of grid and wordlist, separate letters into individual 
+% character cells and convert to corresponding numbers
+% where, A-1, B-2, C-3 etc.
+[num,txt,raw] = xlsread('wordsearch.xlsx');   % load data - grid
+txt = cell2mat(txt); 
+matrix_dim = size(txt); j = 1;
+for i = 1:matrix_dim(1),
+    while j <= matrix_dim(2), num(i,j) = double(txt(i,j))-64 ; j=j+1; end
+    j = 1;
+end
+
+[num_l,txt_l] = xlsread('wordlist.xlsx'); % load data - wordlist
+txt_l = char(txt_l);                      % convert to char matrix
+array_dim = size(txt_l);
+for i = 1:array_dim(1),
+    while j<=array_dim(2), num_l(i,j) = double(txt_l(i,j))-64 ; j=j+1; end
+    j = 1;
+end, i=1;% Note: (workspace) cell values w/ value '-32' = space character
+vector_mat = zeros(array_dim(1), 4); % store cell location for found words
+
+%% Loop - Scan grid for selected word
+for word = 1:array_dim(1),
+    found = 0; % reset for next word
+    temp_storage = num_l(word,:);                
+    temp_storage(temp_storage(1,:)==-32) = [];
+    temp_length = length(temp_storage);
+
+for i = 1:matrix_dim(1),
+    for j = 1:matrix_dim(2),
+        if num(i,j) - temp_storage(1) == 0,% determine if first letter matches with selected grid cell
+            found = 0;
+           while found == 0,   
+               
+               % Case 1 - North (i-1,j)
+               N_i = i-(temp_length-1);
+            if N_i >= 1, % word array is within grid boundary
+                a = i-(temp_length-1); b = j;
+                scan = num([a:i],j); scan = flip(scan); scan = scan'; % dimension corrector
+                scan = scan == temp_storage; scan = prod(scan); % check match output 1-Yes, 0-No
+                if scan == 1, % word found - store vector
+                    vector_mat(word,1) = i; vector_mat(word,2) = j;
+                    vector_mat(word,3) = a; vector_mat(word,4) = b;
+                    found = 1;
+                end
+            end
+            
+               % Case 2 - NorthEast (i-1,j+1)
+               NE_i = i-(temp_length-1);                       if NE_i<1, NE_i=0; end
+               NE_j = (matrix_dim(2)+1) - (j+(temp_length-1)); if NE_j<1, NE_j=0; end
+            if and(NE_i,NE_j), % word array is within grid boundary
+                a = i-(temp_length-1); b = j+(temp_length-1);
+                scan = num([a:i],[j:b]); scan = diag(flip(scan)); scan = scan'; % dimension corrector
+                scan = scan == temp_storage; scan = prod(scan); % check match output 1-Yes, 0-No
+                if scan == 1, % word found - store vector
+                    vector_mat(word,1) = i; vector_mat(word,2) = j;
+                    vector_mat(word,3) = a; vector_mat(word,4) = b;
+                    found = 1;
+                end
+            end
+                
+               % Case 3 - East (i,j+1)
+               E_j = (matrix_dim(2)+1) - (j+(temp_length-1));
+            if E_j >= 1, % word array is within grid boundary
+                a = i; b = j+(temp_length-1);
+                scan = num(a,[j:b]); % horizontal array
+                scan = scan == temp_storage; scan = prod(scan); % check match output 1-Yes, 0-No
+                if scan == 1, % word found - store vector
+                    vector_mat(word,1) = i; vector_mat(word,2) = j;
+                    vector_mat(word,3) = a; vector_mat(word,4) = b;
+                    found = 1;
+                end
+            end
+               
+               % Case 4 - SouthEast (i+1,j+1)
+               SE_i = (matrix_dim(1)+1) - (i+(temp_length-1)); if SE_i<1, SE_i=0; end
+               SE_j = (matrix_dim(2)+1) - (j+(temp_length-1)); if SE_j<1, SE_j=0; end
+            if and(SE_i,SE_j), % word array is within grid boundary
+                a = i+(temp_length-1); b = j+(temp_length-1);
+                scan = num([i:a],[j:b]); scan = diag(scan); scan = scan'; % dimension corrector
+                scan = scan == temp_storage; scan = prod(scan); % check match output 1-Yes, 0-No
+                if scan == 1, % word found - store vector
+                    vector_mat(word,1) = i; vector_mat(word,2) = j;
+                    vector_mat(word,3) = a; vector_mat(word,4) = b;
+                    found = 1;
+                end
+            end
+            
+               % Case 5 - South (i+1,j)
+               S_i = (matrix_dim(1)+1) - (i+(temp_length-1));
+            if S_i >= 1, % word array is within grid boundary
+                a = i+(temp_length-1); b = j;
+                scan = num([i:a],j); scan = scan'; % dimension corrector
+                scan = scan == temp_storage; scan = prod(scan); % check match output 1-Yes, 0-No
+                if scan == 1, % word found - store vector
+                    vector_mat(word,1) = i; vector_mat(word,2) = j;
+                    vector_mat(word,3) = a; vector_mat(word,4) = b;
+                    found = 1;
+                end
+            end                   
+                   
+               % Case 6 - SouthWest (i+1,j-1)
+               SW_i = (matrix_dim(1)+1) - (i+(temp_length-1)); if SW_i<1, SW_i=0; end 
+               SW_j = j-(temp_length-1);                       if SW_j<1, SW_j=0; end
+            if and(SW_i,SW_j), % word array is within grid boundary
+                a = i+(temp_length-1); b = j-(temp_length-1);
+                scan = num([i:a],[b:j]); scan = diag(fliplr(scan)); scan = scan'; % dimension corrector
+                scan = scan == temp_storage; scan = prod(scan); % check match output 1-Yes, 0-No
+                if scan == 1, % word found - store vector
+                    vector_mat(word,1) = i; vector_mat(word,2) = j;
+                    vector_mat(word,3) = a; vector_mat(word,4) = b;
+                    found = 1;
+                end
+            end                   
+                   
+               % Case 7 - West (i,j-1)
+               W_j = j-(temp_length-1);
+            if W_j >= 1, % word array is within grid boundary
+                a = i; b = j-(temp_length-1);
+                scan = num(a,[b:j]); scan = flip(scan);
+                scan = scan == temp_storage; scan = prod(scan); % check match output 1-Yes, 0-No
+                if scan == 1, % word found - store vector
+                    vector_mat(word,1) = i; vector_mat(word,2) = j;
+                    vector_mat(word,3) = a; vector_mat(word,4) = b;
+                    found = 1;
+                end
+            end                   
+                   
+               % Case 8 - NorthWest (i-1,j-1)
+               NW_i = i-(temp_length-1); if NW_i<1, NW_i=0; end
+               NW_j = j-(temp_length-1); if NW_j<1, NW_j=0; end
+               if and(NW_i,NW_j), % word array is within grid boundary
+                   a = i-(temp_length-1); b = j-(temp_length-1);
+                   scan = num([a:i],[b:j]); scan = flip(diag(scan)); scan = scan';
+                   scan = scan == temp_storage; scan = prod(scan); % check match output 1-Yes, 0-No
+                   if scan == 1, % word found - store vector
+                    vector_mat(word,1) = i; vector_mat(word,2) = j;
+                    vector_mat(word,3) = a; vector_mat(word,4) = b;
+                    found = 1;
+                   end
+               end
+               found = 1;                                                  
+           end; end; end; end
+end
+toc;
+% post-processing
+location_mat = zeros(2,1); z = 1;
+for word = 1:length(vector_mat),
+
+temp_storage = num_l(word,:);                
+temp_storage(temp_storage(1,:)==-32) = [];
+temp_length = length(temp_storage);
+for t = 1:temp_length,
+    
+    if length(vector_mat(word,1):vector_mat(word,3)) ==1, location_mat(z,1) = vector_mat(word,1); 
+    elseif length(vector_mat(word,1):vector_mat(word,3)) >1,
+        array = vector_mat(word,1):vector_mat(word,3);
+        location_mat(z,1) = array(t);
+    end
+    if length(vector_mat(word,2):vector_mat(word,4)) ==1, location_mat(z,2) = vector_mat(word,2); 
+    elseif length(vector_mat(word,2):vector_mat(word,4)) >1,
+        array = vector_mat(word,2):vector_mat(word,4);
+        location_mat(z,2) = array(t);
+    end
+        z=z+1;
+end
+end
+
+% Convert raw cell matrix into array
+raw_1 = raw(1,:); for r = 2:matrix_dim(1), raw_1 = [raw_1,raw(r,:)]; end
+raw_1 = raw(1,:);
+for r = 2:matrix_dim(1),
+    raw_1 = [raw_1,raw(r,:)];
+end
+
+% Plot grid
+[X,Y]=meshgrid([1:matrix_dim(1)+1],[1:matrix_dim(2)+2]); %[X,Y]=meshgrid([1:20],[1:19]);
+figure; hold on; plot(X,Y,'k'); plot(Y,X,'k'); set(gca,'Ydir','reverse');hold on
+% Plot text
+q=1; check_red = 0;
+y=linspace(1.7,matrix_dim(2)+.7,matrix_dim(2)); % x=linspace(1.5,19+.5,19);
+x=linspace(1.5,matrix_dim(1)+.5,matrix_dim(1)); % y=linspace(1.5,20+.5,20)
+
+for n=1:matrix_dim(1), 
+    for p=1:matrix_dim(2), 
+        
+        for i = 1:length(location_mat),
+            check = [n,p] == location_mat(i,:); check = prod(check);
+            if check == 1, check_red = 1; end % highlight location letter 'red'
+        end
+        if check_red == 1, text(y(p)-.5,x(n),raw_1(q),'FontWeight','bold', 'color', 'r');
+        elseif check_red == 0, text(y(p)-.5,x(n),raw_1(q),'FontWeight','bold', 'color', 'k');
+        end
+        check_red = 0;
+        q=q+1;
+     end
+end       
+
